@@ -24,11 +24,13 @@ struct LcdWindow {
         uint16_t color;
 };
 
-struct LcdWindow* lcdWindowInit(int offsetx, int offsety, int width, int height);
+
 void lcdWriteCommandByte(uint8_t c);
 void lcdWriteDataByte(uint8_t c);
 void lcdWriteDataWord(uint16_t w);
 struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int, bool vertical);
+struct LcdWindow* lcdWindowInit(int offsetx, int offsety, int width, int height);
+void lcdWindowRemove(struct LcdWindow* windowHandle);
 void lcdReset(void);
 void lcdSetup(void);
 void lcdDrawPixel(struct LcdWindow* windowHandle, uint16_t x, uint16_t y, uint16_t color);

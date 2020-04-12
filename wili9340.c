@@ -60,17 +60,6 @@ int _offsetx;
 int _offsety;
 bool _vertical=false;
 
-
-
-struct LcdWindow* lcdWindowInit(int offsetx, int offsety, int width, int height){
-        struct LcdWindow *lcdWindow;
-        lcdWindow=malloc(sizeof(struct LcdWindow));
-        ((width+offsetx) > _width) ? (lcdWindow->width=_width) : (lcdWindow->width=width);
-        ((height+offsety) > _height) ? (lcdWindow->height=_height) : (lcdWindow->height=height);
-        (offsetx > _width) ? (lcdWindow->offsetx=_width) : (lcdWindow->offsetx=offsetx);
-        (offsety > _height) ? (lcdWindow->offsety=_height) : (lcdWindow->offsety=offsety);
-        return lcdWindow;
-}
 #ifdef WPI
 // Write Command 8Bit
 // D/C=LOW then,write command(8bit)
@@ -238,6 +227,21 @@ struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int height, bool 
 
 }
 
+struct LcdWindow* lcdWindowInit(int offsetx, int offsety, int width, int height){
+        struct LcdWindow *lcdWindow;
+        lcdWindow=malloc(sizeof(struct LcdWindow));
+        ((width+offsetx) > _width) ? (lcdWindow->width=_width) : (lcdWindow->width=width);
+        ((height+offsety) > _height) ? (lcdWindow->height=_height) : (lcdWindow->height=height);
+        (offsetx > _width) ? (lcdWindow->offsetx=_width) : (lcdWindow->offsetx=offsetx);
+        (offsety > _height) ? (lcdWindow->offsety=_height) : (lcdWindow->offsety=offsety);
+        return lcdWindow;
+}
+
+void lcdWindowRemove(struct LcdWindow* windowHandle){
+        if (!windowHandle) return;
+        free(windowHandle);
+}
+
 // TFT Reset
 void lcdReset(void){
         bcm2835_gpio_fsel(D_C,BCM2835_GPIO_FSEL_OUTP); // D/C
@@ -341,6 +345,7 @@ void lcdSetup(void){
 // color:color
 void lcdDrawPixel(struct LcdWindow* windowHandle,uint16_t x, uint16_t y, uint16_t color)
 {
+        if (!windowHandle) return;
         if (x >= windowHandle->width || x < 0 ) return;
         if (y >= windowHandle->height || y < 0 ) return;
 
@@ -365,6 +370,7 @@ void lcdDrawPixel(struct LcdWindow* windowHandle,uint16_t x, uint16_t y, uint16_
 // color:color
 void lcdDrawFillRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
+        if (!windowHandle) return;
         int i,j;
         if (x1 >= windowHandle->width) return;
         if (x2 >= windowHandle->width) x2=windowHandle->width;
@@ -395,7 +401,7 @@ void lcdDrawFillRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, ui
         //lcdWriteAddr(_y1, _y2); // Don't work
         lcdWriteCommandByte(0x2C); // Memory Write
 
-        for(i=_vertical ? _x1:_x2; i<=(_vertical ? _x2:_x1); i++) {
+        for(i=_vertical ? _x1 : _x2; i<=(_vertical ? _x2 : _x1); i++) {
                 uint16_t size = _vertical ? (y2-y1+1) : (_x1-_x2+1);
                 //printf("xxxxxxx size is %i\n", size);
                 lcdWriteColor(color, size);
@@ -425,6 +431,7 @@ void lcdInversionOn(void)
 // color:color
 void lcdFillScreen(struct LcdWindow* windowHandle,uint16_t color)
 {
+        if (!windowHandle) return;
         lcdDrawFillRect(windowHandle,0, 0, _width-1, _height-1, color);
 }
 
@@ -436,6 +443,7 @@ void lcdFillScreen(struct LcdWindow* windowHandle,uint16_t color)
 // color:color
 void lcdDrawLine(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
+        if (!windowHandle) return;
         int i;
         int dx,dy;
         int sx,sy;
@@ -484,6 +492,7 @@ void lcdDrawLine(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16
 // color:color
 void lcdDrawRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
+        if (!windowHandle) return;
         lcdDrawLine(windowHandle,x1,y1,x2,y1,color);
         lcdDrawLine(windowHandle,x2,y1,x2,y2,color);
         lcdDrawLine(windowHandle,x2,y2,x1,y2,color);
@@ -497,6 +506,7 @@ void lcdDrawRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16
 // color:color
 void lcdDrawCircle(struct LcdWindow* windowHandle, uint16_t x0, uint16_t y0, uint16_t r, uint16_t color)
 {
+        if (!windowHandle) return;
         int x;
         int y;
         int err;
@@ -523,6 +533,7 @@ void lcdDrawCircle(struct LcdWindow* windowHandle, uint16_t x0, uint16_t y0, uin
 // color:color
 void lcdDrawFillCircle(struct LcdWindow* windowHandle,uint16_t x0, uint16_t y0, uint16_t r, uint16_t color)
 {
+        if (!windowHandle) return;
         int x;
         int y;
         int err;
@@ -555,6 +566,7 @@ void lcdDrawFillCircle(struct LcdWindow* windowHandle,uint16_t x0, uint16_t y0, 
 // color:color
 void lcdDrawRoundRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t r, uint16_t color)
 {
+        if (!windowHandle) return;
         int x;
         int y;
         int err;
@@ -606,6 +618,7 @@ void lcdDrawRoundRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, u
 // Thanks http://k-hiura.cocolog-nifty.com/blog/2010/11/post-2a62.html
 void lcdDrawArrow(struct LcdWindow* windowHandle,uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1,uint16_t w,uint16_t color)
 {
+        if (!windowHandle) return;
 
         double Vx= x1 - x0;
         double Vy= y1 - y0;
@@ -637,7 +650,7 @@ void lcdDrawArrow(struct LcdWindow* windowHandle,uint16_t x0,uint16_t y0,uint16_
 // color:color
 void lcdDrawFillArrow(struct LcdWindow* windowHandle,uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1,uint16_t w,uint16_t color)
 {
-
+        if (!windowHandle) return;
         double Vx= x1 - x0;
         double Vy= y1 - y0;
         double v = sqrt(Vx*Vx+Vy*Vy);
@@ -684,6 +697,7 @@ uint16_t rgb565_conv(uint16_t r,uint16_t g,uint16_t b)
 // color:color
 int lcdDrawSJISChar(struct LcdWindow* windowHandle,FontxFile *fx, uint16_t x,uint16_t y,uint16_t sjis,uint16_t color)
 {
+        if (!windowHandle) return 0;
         uint16_t xx,yy,bit,ofs;
         unsigned char fonts[128]; // font pattern
         unsigned char pw, ph;
@@ -818,6 +832,7 @@ int lcdDrawSJISChar(struct LcdWindow* windowHandle,FontxFile *fx, uint16_t x,uin
 // color:color
 int lcdDrawUTF8Char(struct LcdWindow* windowHandle,FontxFile *fx, uint16_t x,uint16_t y,uint8_t *utf8,uint16_t color)
 {
+        if (!windowHandle) return 0;
         uint16_t sjis[1];
 
         sjis[0] = UTF2SJIS(utf8);
@@ -832,6 +847,7 @@ int lcdDrawUTF8Char(struct LcdWindow* windowHandle,FontxFile *fx, uint16_t x,uin
 // color:color
 int lcdDrawUTF8String(struct LcdWindow* windowHandle,FontxFile *fx, uint16_t x,uint16_t y,unsigned char *utfs,uint16_t color)
 {
+        if (!windowHandle) return 0;
 
         if(_DEBUG_) printf("lcdDrawUTF8String start x=%d y=%d\n",x,y);
         int i;
