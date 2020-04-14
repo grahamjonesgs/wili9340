@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 #ifdef WPI
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
@@ -59,6 +60,8 @@ int _height;
 int _offsetx;
 int _offsety;
 bool _vertical=false;
+
+pthread_mutex_t lcdlock;
 
 #ifdef WPI
 // Write Command 8Bit
@@ -155,7 +158,8 @@ struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int height, bool 
         _offsetx = offsetx;
         _offsety = offsety;
         _vertical = vertical;
-
+        pthread_mutex_init(&lcdlock, NULL);
+pthread_mutex_lock(&lcdlock);
         if (wiringPiSetupGpio() == -1) {
                 printf("wiringPiSetup Error\n");
                 return 0;
@@ -173,6 +177,7 @@ struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int height, bool 
         lcdWindow->width=height;
         lcdWindow->offsetx=offsetx;
         lcdWindow->offsety=offsety;
+        pthread_mutex_unlock(&lcdlock);
         return lcdWindow;
 
 }
@@ -199,6 +204,9 @@ struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int height, bool 
         _offsetx = offsetx;
         _offsety = offsety;
         _vertical = vertical;
+
+        pthread_mutex_init(&lcdlock, NULL);
+        pthread_mutex_lock(&lcdlock);
         if (bcm2835_init() == -1) {
                 printf("bmc2835_init Error\n");
                 return 0;
@@ -223,6 +231,7 @@ struct LcdWindow* lcdInit(int offsetx, int offsety, int width, int height, bool 
         lcdWindow->height=height;
         lcdWindow->offsetx=offsetx;
         lcdWindow->offsety=offsety;
+        pthread_mutex_unlock(&lcdlock);
         return lcdWindow;
 
 }
@@ -257,6 +266,8 @@ void lcdReset(void){
 
 // TFT initialize
 void lcdSetup(void){
+  pthread_mutex_lock(&lcdlock);
+
         lcdWriteCommandByte(0xC0); //Power Control 1
         lcdWriteDataByte(0x23);
 
@@ -337,6 +348,7 @@ void lcdSetup(void){
 #endif
 
         lcdWriteCommandByte(0x29); //Display ON
+        pthread_mutex_unlock(&lcdlock);
 }
 
 // Draw pixel
@@ -345,6 +357,7 @@ void lcdSetup(void){
 // color:color
 void lcdDrawPixel(struct LcdWindow* windowHandle,uint16_t x, uint16_t y, uint16_t color)
 {
+  pthread_mutex_lock(&lcdlock);
         if (!windowHandle) return;
         if (x >= windowHandle->width || x < 0 ) return;
         if (y >= windowHandle->height || y < 0 ) return;
@@ -360,6 +373,7 @@ void lcdDrawPixel(struct LcdWindow* windowHandle,uint16_t x, uint16_t y, uint16_
         lcdWriteDataWord(_vertical ? _y : _x);
         lcdWriteCommandByte(0x2C); // Memory Write
         lcdWriteDataWord(color);
+        pthread_mutex_unlock(&lcdlock);
 }
 
 // Draw rectangule of filling
@@ -370,6 +384,7 @@ void lcdDrawPixel(struct LcdWindow* windowHandle,uint16_t x, uint16_t y, uint16_
 // color:color
 void lcdDrawFillRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
+pthread_mutex_lock(&lcdlock);
         if (!windowHandle) return;
         int i,j;
         if (x1 >= windowHandle->width) return;
@@ -406,25 +421,32 @@ void lcdDrawFillRect(struct LcdWindow* windowHandle,uint16_t x1, uint16_t y1, ui
                 //printf("xxxxxxx size is %i\n", size);
                 lcdWriteColor(color, size);
         }
+        pthread_mutex_unlock(&lcdlock);
 
 }
 
 // Display Off
 void lcdDisplayOff(void)
 {
+  pthread_mutex_lock(&lcdlock);
         lcdWriteCommandByte(0x28); //Display OFF
+        pthread_mutex_unlock(&lcdlock);
 }
 
 // Display On
 void lcdDisplayOn(void)
 {
+  pthread_mutex_lock(&lcdlock);
         lcdWriteCommandByte(0x29); //Display ON
+        pthread_mutex_unlock(&lcdlock);
 }
 
 // Display Inversion On
 void lcdInversionOn(void)
 {
+  pthread_mutex_lock(&lcdlock);
         lcdWriteCommandByte(0x21); //Display Inversion ON
+        pthread_mutex_unlock(&lcdlock);
 }
 
 // Fill screen
